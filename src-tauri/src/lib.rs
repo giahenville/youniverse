@@ -32,6 +32,24 @@ pub fn run() {
                 ADD COLUMN description TEXT NOT NULL DEFAULT '';
             ",
             kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 3,
+            description: "create_connections_table",
+            sql: "
+                CREATE TABLE IF NOT EXISTS connections (
+                    source TEXT NOT NULL,
+                    target TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (source, target),
+                    CHECK (source < target),
+                    FOREIGN KEY (source) REFERENCES thoughts(id)
+                        ON DELETE CASCADE,
+                    FOREIGN KEY (target) REFERENCES thoughts(id)
+                        ON DELETE CASCADE
+                );
+            ",
+            kind: MigrationKind::Up,
         }
     ];
 

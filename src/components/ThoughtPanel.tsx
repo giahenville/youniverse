@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Thought } from "../types/thought";
+import type { Thought, ThoughtConnection } from "../types/thought";
 
 type ThoughtPanelProps = {
   thought: Thought;
@@ -7,6 +7,10 @@ type ThoughtPanelProps = {
   onSave: (thought: Thought) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   isDemo: boolean;
+  availableThoughts: Thought[];
+  onConnect: (targetId: string) => Promise<void>;
+  connections: ThoughtConnection[];
+  onDisconnect: (targetId: string) => Promise<void>;
 };
 
 export function ThoughtPanel({
@@ -15,12 +19,19 @@ export function ThoughtPanel({
   onSave,
   onDelete,
   isDemo,
+  availableThoughts,
+  onConnect,
+  connections,
+  onDisconnect,
 }: ThoughtPanelProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(thought.title);
   const [description, setDescription] = useState(thought.description);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [targetId, setTargetId] = useState("");
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -29,6 +40,7 @@ export function ThoughtPanel({
     setDescription(thought.description);
     setIsEditing(false);
     setConfirmingDelete(false);
+    setTargetId("");
     setSaveError(null);
   }, [thought.id, thought.title, thought.description]);
 
@@ -50,6 +62,39 @@ export function ThoughtPanel({
       setSaveError("Could not save changes. Please try again.");
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handleConnect() {
+    if (!targetId || isConnecting || isDemo) return;
+
+    setIsConnecting(true);
+    setSaveError(null);
+
+    try {
+      await onConnect(targetId);
+      setTargetId("");
+    } catch (error) {
+      console.error("Failed to connect thoughts:", error);
+      setSaveError("Could not connect these thoughts.");
+    } finally {
+      setIsConnecting(false);
+    }
+  }
+
+  async function handleDisconnect(otherId: string) {
+    if (disconnectingId || isConnecting) return;
+
+    setDisconnectingId(otherId);
+    setSaveError(null);
+
+    try {
+      await onDisconnect(otherId);
+    } catch (error) {
+      console.error("Failed to disconnect thoughts:", error);
+      setSaveError("Could not remove the connection.");
+    } finally {
+      setDisconnectingId(null);
     }
   }
 
@@ -147,6 +192,72 @@ export function ThoughtPanel({
               >
                 Edit Thought
               </button>
+
+              <div className="thought-connect">
+                <h3>Connections</h3>
+                <label htmlFor="connection-target">
+                  Connect this thought to:
+                </label>
+                <select
+                  id="connection-target"
+                  value={targetId}
+                  onChange={(event) => setTargetId(event.target.value)}
+                  disabled={isConnecting}
+                >
+                  <option value="">Choose a thought...</option>
+                  {availableThoughts
+                    .filter((other) => other.id !== thought.id)
+                    .map((other) => (
+                      <option key={other.id} value={other.id}>
+                        {other.title}
+                      </option>
+                    ))}
+                </select>
+                <button
+                  type="button"
+                  disabled={!targetId || isConnecting}
+                  onClick={() => void handleConnect()}
+                >
+                  {isConnecting ? "Connecting..." : "Connect Thought"}
+                </button>
+              </div>
+
+              <div className="existing-connections">
+                <h3>Connected thoughts</h3>
+                {connections
+                  .filter(
+                    (connection) =>
+                      connection.source === thought.id ||
+                      connection.target === thought.id
+                  )
+                  .map((connection) => {
+                    const otherId =
+                      connection.source === thought.id
+                        ? connection.target
+                        : connection.source;
+
+                    const other = availableThoughts.find(
+                      (item) => item.id === otherId
+                    );
+
+                    if (!other) return null;
+
+                    return (
+                      <div className="connection-item" key={otherId}>
+                        <span>{other.title}</span>
+                        <button
+                          type="button"
+                          disabled={disconnectingId !== null || isConnecting}
+                          onClick={() => void handleDisconnect(otherId)}
+                        >
+                          {disconnectingId === otherId
+                            ? "Removing..."
+                            : "Disconnect"}
+                        </button>
+                      </div>
+                    );
+                  })}
+              </div>
 
               {!confirmingDelete ? (
                 <button

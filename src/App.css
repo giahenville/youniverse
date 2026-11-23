@@ -308,3 +308,85 @@ body,
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Thought connections */
+
+.thought-connect {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #57516f;
+}
+
+.thought-connect h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.thought-connect label {
+  color: #c4b5fd;
+  font-size: 12px;
+}
+
+.thought-connect select {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #57516f;
+  border-radius: 8px;
+  background: #141225;
+  color: white;
+  font: inherit;
+}
+
+.thought-connect button {
+  padding: 10px 14px;
+  border: 1px solid #7c6db5;
+  border-radius: 8px;
+  background: #30254d;
+  color: white;
+  cursor: pointer;
+}
+
+.thought-connect button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Existing connections */
+
+.existing-connections {
+  margin-top: 16px;
+}
+
+.existing-connections h3 {
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.connection-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding: 10px;
+  border: 1px solid #57516f;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.connection-item button {
+  padding: 7px 10px;
+  border: 1px solid #9f5365;
+  border-radius: 6px;
+  background: #38202d;
+  color: #fecdd3;
+  cursor: pointer;
+}
+
+.connection-item button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

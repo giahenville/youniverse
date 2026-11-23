@@ -81,12 +81,26 @@ export async function updateThought(
 export async function deleteThought(id: string): Promise<void> {
   const db = await getDatabase();
 
+  const rows = await db.select<{ id: string }[]>(
+    "SELECT id FROM thoughts WHERE id = $1",
+    [id]
+  );
+
+  if (rows.length !== 1) {
+    throw new Error("Thought was not found in the database.");
+  }
+
+  await db.execute(
+    "DELETE FROM connections WHERE source = $1 OR target = $1",
+    [id]
+  );
+
   const result = await db.execute(
     "DELETE FROM thoughts WHERE id = $1",
     [id]
   );
 
   if (result.rowsAffected !== 1) {
-    throw new Error("Thought was not found in the database.");
+    throw new Error("Thought could not be deleted.");
   }
 }
