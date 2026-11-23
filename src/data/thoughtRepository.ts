@@ -77,3 +77,16 @@ export async function updateThought(
     throw new Error("Thought was not found in the database.");
   }
 }
+
+export async function deleteThought(id: string): Promise<void> {
+  const db = await getDatabase();
+
+  const result = await db.execute(
+    "DELETE FROM thoughts WHERE id = $1",
+    [id]
+  );
+
+  if (result.rowsAffected !== 1) {
+    throw new Error("Thought was not found in the database.");
+  }
+}

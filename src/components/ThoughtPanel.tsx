@@ -5,6 +5,7 @@ type ThoughtPanelProps = {
   thought: Thought;
   onClose: () => void;
   onSave: (thought: Thought) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
   isDemo: boolean;
 };
 
@@ -12,18 +13,22 @@ export function ThoughtPanel({
   thought,
   onClose,
   onSave,
+  onDelete,
   isDemo,
 }: ThoughtPanelProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(thought.title);
   const [description, setDescription] = useState(thought.description);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     setTitle(thought.title);
     setDescription(thought.description);
     setIsEditing(false);
+    setConfirmingDelete(false);
     setSaveError(null);
   }, [thought.id, thought.title, thought.description]);
 
@@ -48,12 +53,27 @@ export function ThoughtPanel({
     }
   }
 
+  async function handleDelete() {
+    if (isDeleting || isSaving || isDemo) return;
+
+    setIsDeleting(true);
+    setSaveError(null);
+
+    try {
+      await onDelete(thought.id);
+    } catch (error) {
+      console.error("Failed to delete thought:", error);
+      setSaveError("Could not delete this thought. Please try again.");
+      setIsDeleting(false);
+    }
+  }
+
   return (
     <aside className="thought-panel">
       <button
         className="close-button"
         onClick={onClose}
-        disabled={isSaving}
+        disabled={isSaving || isDeleting}
         aria-label="Close thought panel"
       >
         ×
@@ -120,12 +140,45 @@ export function ThoughtPanel({
               to edit and save it.
             </p>
           ) : (
-            <button
-              className="edit-thought-button"
-              onClick={() => setIsEditing(true)}
-            >
-              Edit Thought
-            </button>
+            <>
+              <button
+                className="edit-thought-button"
+                onClick={() => setIsEditing(true)}
+              >
+                Edit Thought
+              </button>
+
+              {!confirmingDelete ? (
+                <button
+                  className="delete-thought-button"
+                  onClick={() => setConfirmingDelete(true)}
+                >
+                  Delete Thought
+                </button>
+              ) : (
+                <div className="delete-confirmation">
+                  <p>
+                    Permanently delete this thought? This cannot be undone.
+                  </p>
+                  <button
+                    type="button"
+                    disabled={isDeleting}
+                    onClick={() => setConfirmingDelete(false)}
+                  >
+                    Keep Thought
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isDeleting}
+                    onClick={() => void handleDelete()}
+                  >
+                    {isDeleting ? "Deleting..." : "Yes, Delete Permanently"}
+                  </button>
+                </div>
+              )}
+
+              {saveError && <p role="alert">{saveError}</p>}
+            </>
           )}
         </>
       )}

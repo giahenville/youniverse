@@ -266,3 +266,45 @@ body,
   font-size: 12px;
   color: #c4b5fd;
 }
+
+/* Thought deletion */
+
+.delete-thought-button {
+  display: block;
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 1px solid #9f5365;
+  border-radius: 8px;
+  background: #38202d;
+  color: #fecdd3;
+  cursor: pointer;
+}
+
+.delete-confirmation {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #9f5365;
+  border-radius: 10px;
+  background: #281824;
+}
+
+.delete-confirmation p {
+  margin: 0 0 12px;
+  color: #fecdd3;
+  font-size: 13px;
+}
+
+.delete-confirmation button {
+  margin: 4px 8px 4px 0;
+  padding: 9px 12px;
+  border: 1px solid #9f5365;
+  border-radius: 7px;
+  background: #38202d;
+  color: white;
+  cursor: pointer;
+}
+
+.delete-confirmation button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -4,7 +4,7 @@ import { Canvas } from "@react-three/fiber";
 import { Universe } from "./universe/Universe";
 import { ThoughtPanel } from "./components/ThoughtPanel";
 import { initialThoughts, initialConnections } from "./data/sampleThoughts";
-import { loadThoughts, saveThought, updateThought } from "./data/thoughtRepository";
+import { loadThoughts, saveThought, updateThought, deleteThought } from "./data/thoughtRepository";
 import type { Thought } from "./types/thought";
 
 import "./App.css";
@@ -149,6 +149,13 @@ function App() {
                   : existingThought
               )
             );
+          }}
+          onDelete={async (id) => {
+            await deleteThought(id);
+            setThoughts((previousThoughts) =>
+              previousThoughts.filter((thought) => thought.id !== id)
+            );
+            setSelectedThoughtId(null);
           }}
         />
       )}
