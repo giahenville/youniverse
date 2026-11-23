@@ -23,6 +23,15 @@ pub fn run() {
                 );
             ",
             kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 2,
+            description: "add_thought_description",
+            sql: "
+                ALTER TABLE thoughts
+                ADD COLUMN description TEXT NOT NULL DEFAULT '';
+            ",
+            kind: MigrationKind::Up,
         }
     ];
 

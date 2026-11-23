@@ -4,7 +4,7 @@ import { Canvas } from "@react-three/fiber";
 import { Universe } from "./universe/Universe";
 import { ThoughtPanel } from "./components/ThoughtPanel";
 import { initialThoughts, initialConnections } from "./data/sampleThoughts";
-import { loadThoughts, saveThought } from "./data/thoughtRepository";
+import { loadThoughts, saveThought, updateThought } from "./data/thoughtRepository";
 import type { Thought } from "./types/thought";
 
 import "./App.css";
@@ -63,6 +63,7 @@ function App() {
     const newThought: Thought = {
       id: crypto.randomUUID(),
       title,
+      description: "",
       position: [
         (Math.random() - 0.5) * 6,
         (Math.random() - 0.5) * 4,
@@ -136,6 +137,19 @@ function App() {
         <ThoughtPanel
           thought={selectedThought}
           onClose={() => setSelectedThoughtId(null)}
+          isDemo={initialThoughts.some(
+            (sample) => sample.id === selectedThought.id
+          )}
+          onSave={async (updatedThought) => {
+            await updateThought(updatedThought);
+            setThoughts((previousThoughts) =>
+              previousThoughts.map((existingThought) =>
+                existingThought.id === updatedThought.id
+                  ? updatedThought
+                  : existingThought
+              )
+            );
+          }}
         />
       )}
 
