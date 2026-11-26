@@ -10,6 +10,7 @@ import type {
 import { ThoughtStar } from "./ThoughtStar";
 import { Connection } from "./Connection";
 import { getNeighbors } from "../utils/graph";
+import { getActivityBrightness } from "../utils/relevance";
 
 type UniverseProps = {
   thoughts: Thought[];
@@ -87,6 +88,7 @@ export function Universe({
         return (
           <ThoughtStar
             radius={getStarRadius(degrees.get(thought.id) ?? 0)}
+            brightness={getActivityBrightness(thought)}
             key={thought.id}
             thought={thought}
             selected={selected}
@@ -97,6 +99,8 @@ export function Universe({
           />
         );
       })}
+
+
 
       <OrbitControls enableDamping />
     </>

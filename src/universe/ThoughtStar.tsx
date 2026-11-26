@@ -3,6 +3,7 @@ import type { Thought } from "../types/thought";
 
 type ThoughtStarProps = {
   radius: number;
+  brightness: number;
   thought: Thought;
   selected: boolean;
   hovered: boolean;
@@ -13,6 +14,7 @@ type ThoughtStarProps = {
 
 export function ThoughtStar({
   radius,
+  brightness,
   thought,
   selected,
   hovered,
@@ -43,7 +45,11 @@ export function ThoughtStar({
           color={dimmed ? "#151520" : thought.color}
           emissive={dimmed ? "#000000" : thought.color}
           emissiveIntensity={
-            dimmed ? 0 : hovered || selected ? 1.5 : 0.7
+            dimmed
+              ? 0
+              : hovered || selected
+                ? 1.5
+                : 0.7 * brightness
           }
           transparent={dimmed}
           opacity={dimmed ? 0.04 : 1}

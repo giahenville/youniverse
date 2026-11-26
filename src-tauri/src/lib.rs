@@ -50,6 +50,25 @@ pub fn run() {
                 );
             ",
             kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 4,
+            description: "add_temporal_awareness",
+            sql: "
+                ALTER TABLE thoughts
+                ADD COLUMN updated_at TEXT;
+
+                ALTER TABLE thoughts
+                ADD COLUMN last_engaged_at TEXT;
+
+                ALTER TABLE thoughts
+                ADD COLUMN engagement_count INTEGER
+                NOT NULL DEFAULT 0;
+
+                UPDATE thoughts
+                SET updated_at = created_at;
+            ",
+            kind: MigrationKind::Up,
         }
     ];
 

@@ -4,7 +4,7 @@ import { Canvas } from "@react-three/fiber";
 import { Universe } from "./universe/Universe";
 import { ThoughtPanel } from "./components/ThoughtPanel";
 import { initialThoughts, initialConnections } from "./data/sampleThoughts";
-import { loadThoughts, saveThought, updateThought, deleteThought } from "./data/thoughtRepository";
+import { loadThoughts, saveThought, updateThought, deleteThought, recordThoughtEngagement } from "./data/thoughtRepository";
 import type { Thought, ThoughtConnection } from "./types/thought";
 import { loadConnections, saveConnection, deleteConnection } from "./data/connectionRepository";
 
@@ -60,6 +60,36 @@ function App() {
       (thought) => thought.id === selectedThoughtId
     ) ?? null;
 
+  async function selectThought(id: string) {
+    if (id === selectedThoughtId) return;
+
+    setSelectedThoughtId(id);
+
+    const isDemo = initialThoughts.some(
+      (sample) => sample.id === id
+    );
+
+    if (isDemo || isLoading) return;
+
+    try {
+      const engagement = await recordThoughtEngagement(id);
+
+      setThoughts((previousThoughts) =>
+        previousThoughts.map((thought) =>
+          thought.id === id
+            ? {
+                ...thought,
+                ...engagement,
+              }
+            : thought
+        )
+      );
+    } catch (err) {
+      console.error("Failed to record engagement:", err);
+      setError("Could not record thought engagement.");
+    }
+  }
+
   async function createThought() {
     const title = newThoughtTitle.trim();
 
@@ -80,11 +110,11 @@ function App() {
     setIsSaving(true);
 
     try {
-      await saveThought(newThought);
+      const savedThought = await saveThought(newThought);
 
       setThoughts((previousThoughts) => [
         ...previousThoughts,
-        newThought,
+        savedThought,
       ]);
 
       setSelectedThoughtId(newThought.id);
@@ -134,7 +164,7 @@ function App() {
           thoughts={thoughts}
           connections={connections}
           selectedThoughtId={selectedThoughtId}
-          onSelectThought={setSelectedThoughtId}
+          onSelectThought={selectThought}
         />
       </Canvas>
 
@@ -184,11 +214,16 @@ function App() {
             });
           }}
           onSave={async (updatedThought) => {
-            await updateThought(updatedThought);
+            const updatedAt = await updateThought(updatedThought);
             setThoughts((previousThoughts) =>
               previousThoughts.map((existingThought) =>
                 existingThought.id === updatedThought.id
-                  ? updatedThought
+                  ? {
+                      ...existingThought,
+                      title: updatedThought.title,
+                      description: updatedThought.description,
+                      updatedAt,
+                    }
                   : existingThought
               )
             );

@@ -4,6 +4,10 @@ export type Thought = {
   description: string;
   position: [number, number, number];
   color: string;
+  createdAt?: string;
+  updatedAt?: string;
+  lastEngagedAt?: string | null;
+  engagementCount?: number;
 };
 
 export type ThoughtConnection = {
