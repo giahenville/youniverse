@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
 import type { Thought, ThoughtConnection } from "../types/thought";
+import {
+  RELATIONSHIP_TYPES,
+  RELATIONSHIP_LABELS,
+  isSymmetricRelationship,
+  type RelationshipType,
+} from "../types/relationship";
+import { getConnectionKey } from "../utils/relationships";
 
 type ThoughtPanelProps = {
   thought: Thought;
@@ -8,9 +15,18 @@ type ThoughtPanelProps = {
   onDelete: (id: string) => Promise<void>;
   isDemo: boolean;
   availableThoughts: Thought[];
-  onConnect: (targetId: string) => Promise<void>;
+  onConnect: (
+    targetId: string,
+    relationshipType: RelationshipType,
+    description: string,
+    reverse: boolean
+  ) => Promise<void>;
   connections: ThoughtConnection[];
-  onDisconnect: (targetId: string) => Promise<void>;
+  onDisconnect: (connection: ThoughtConnection) => Promise<void>;
+  onUpdateConnection: (
+    connection: ThoughtConnection,
+    description: string
+  ) => Promise<void>;
 };
 
 export function ThoughtPanel({
@@ -23,6 +39,7 @@ export function ThoughtPanel({
   onConnect,
   connections,
   onDisconnect,
+  onUpdateConnection,
 }: ThoughtPanelProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(thought.title);
@@ -30,10 +47,34 @@ export function ThoughtPanel({
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [targetId, setTargetId] = useState("");
+  const [relationshipType, setRelationshipType] =
+    useState<RelationshipType>("related_to");
+  const [relationshipDescription, setRelationshipDescription] =
+    useState("");
+  const [reverse, setReverse] = useState(false);
+  const [editingConnectionKey, setEditingConnectionKey] =
+    useState<string | null>(null);
+  const [editingDescription, setEditingDescription] =
+    useState("");
+  const [isUpdatingConnection, setIsUpdatingConnection] =
+    useState(false);
+
+  const targetThought = availableThoughts.find(
+    (item) => item.id === targetId
+  );
+
+  const symmetric =
+    isSymmetricRelationship(relationshipType);
+
+
   const [isConnecting, setIsConnecting] = useState(false);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  const relationshipBusy =
+    isConnecting || disconnectingId !== null ||
+    isUpdatingConnection;
 
   useEffect(() => {
     setTitle(thought.title);
@@ -41,6 +82,11 @@ export function ThoughtPanel({
     setIsEditing(false);
     setConfirmingDelete(false);
     setTargetId("");
+    setRelationshipType("related_to");
+    setRelationshipDescription("");
+    setReverse(false);
+    setEditingConnectionKey(null);
+    setEditingDescription("");
     setSaveError(null);
   }, [thought.id, thought.title, thought.description]);
 
@@ -58,22 +104,34 @@ export function ThoughtPanel({
         description: description.trim(),
       });
       setIsEditing(false);
-    } catch {
-      setSaveError("Could not save changes. Please try again.");
+    } catch (error) {
+      setSaveError(
+        error instanceof Error &&
+        error.message === "A thought with this title already exists."
+          ? error.message
+          : "Could not save changes. Please try again."
+      );
     } finally {
       setIsSaving(false);
     }
   }
 
   async function handleConnect() {
-    if (!targetId || isConnecting || isDemo) return;
+    if (!targetId || relationshipBusy || isDemo) return;
 
     setIsConnecting(true);
     setSaveError(null);
 
     try {
-      await onConnect(targetId);
+      await onConnect(
+        targetId,
+        relationshipType,
+        relationshipDescription,
+        !symmetric && reverse
+      );
       setTargetId("");
+      setRelationshipDescription("");
+      setReverse(false);
     } catch (error) {
       console.error("Failed to connect thoughts:", error);
       setSaveError("Could not connect these thoughts.");
@@ -82,14 +140,14 @@ export function ThoughtPanel({
     }
   }
 
-  async function handleDisconnect(otherId: string) {
-    if (disconnectingId || isConnecting) return;
+  async function handleDisconnect(connection: ThoughtConnection) {
+    if (relationshipBusy || isDemo) return;
 
-    setDisconnectingId(otherId);
+    setDisconnectingId(getConnectionKey(connection));
     setSaveError(null);
 
     try {
-      await onDisconnect(otherId);
+      await onDisconnect(connection);
     } catch (error) {
       console.error("Failed to disconnect thoughts:", error);
       setSaveError("Could not remove the connection.");
@@ -98,8 +156,30 @@ export function ThoughtPanel({
     }
   }
 
+  async function handleUpdateConnection(
+    connection: ThoughtConnection
+  ) {
+    if (relationshipBusy || isDemo) return;
+
+    setIsUpdatingConnection(true);
+    setSaveError(null);
+
+    try {
+      await onUpdateConnection(
+        connection,
+        editingDescription
+      );
+      setEditingConnectionKey(null);
+    } catch (error) {
+      console.error("Failed to update relationship:", error);
+      setSaveError("Could not update the relationship.");
+    } finally {
+      setIsUpdatingConnection(false);
+    }
+  }
+
   async function handleDelete() {
-    if (isDeleting || isSaving || isDemo) return;
+    if (isDeleting || isSaving || isDemo || relationshipBusy) return;
 
     setIsDeleting(true);
     setSaveError(null);
@@ -194,17 +274,22 @@ export function ThoughtPanel({
               </button>
 
               <div className="thought-connect">
-                <h3>Connections</h3>
+                <h3>Create relationship</h3>
+
                 <label htmlFor="connection-target">
-                  Connect this thought to:
+                  Connect to
                 </label>
+
                 <select
                   id="connection-target"
                   value={targetId}
-                  onChange={(event) => setTargetId(event.target.value)}
-                  disabled={isConnecting}
+                  onChange={(event) =>
+                    setTargetId(event.target.value)
+                  }
+                  disabled={relationshipBusy}
                 >
                   <option value="">Choose a thought...</option>
+
                   {availableThoughts
                     .filter((other) => other.id !== thought.id)
                     .map((other) => (
@@ -213,17 +298,88 @@ export function ThoughtPanel({
                       </option>
                     ))}
                 </select>
+
+                <label htmlFor="relationship-type">
+                  Relationship type
+                </label>
+
+                <select
+                  id="relationship-type"
+                  value={relationshipType}
+                  disabled={relationshipBusy}
+                  onChange={(event) => {
+                    setRelationshipType(
+                      event.target.value as RelationshipType
+                    );
+                    setReverse(false);
+                  }}
+                >
+                  {RELATIONSHIP_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {RELATIONSHIP_LABELS[type]}
+                    </option>
+                  ))}
+                </select>
+
+                {targetThought && (
+                  <div className="relationship-preview">
+                    <strong>
+                      {reverse && !symmetric
+                        ? targetThought.title
+                        : thought.title}
+                    </strong>
+
+                    <span>
+                      {RELATIONSHIP_LABELS[relationshipType]}
+                    </span>
+
+                    <strong>
+                      {reverse && !symmetric
+                        ? thought.title
+                        : targetThought.title}
+                    </strong>
+                  </div>
+                )}
+
+                {!symmetric && targetThought && (
+                  <button
+                    type="button"
+                    disabled={relationshipBusy}
+                    onClick={() => setReverse(!reverse)}
+                  >
+                    Reverse direction
+                  </button>
+                )}
+
+                <label htmlFor="relationship-description">
+                  Why are these thoughts connected?
+                </label>
+
+                <textarea
+                  id="relationship-description"
+                  value={relationshipDescription}
+                  onChange={(event) =>
+                    setRelationshipDescription(event.target.value)
+                  }
+                  placeholder="Explain the relationship (optional)"
+                  disabled={relationshipBusy}
+                  rows={3}
+                />
+
                 <button
                   type="button"
-                  disabled={!targetId || isConnecting}
+                  disabled={!targetId || relationshipBusy}
                   onClick={() => void handleConnect()}
                 >
-                  {isConnecting ? "Connecting..." : "Connect Thought"}
+                  {isConnecting
+                    ? "Connecting..."
+                    : "Connect Thoughts"}
                 </button>
               </div>
 
               <div className="existing-connections">
-                <h3>Connected thoughts</h3>
+                <h3>Relationships</h3>
+
                 {connections
                   .filter(
                     (connection) =>
@@ -231,29 +387,103 @@ export function ThoughtPanel({
                       connection.target === thought.id
                   )
                   .map((connection) => {
-                    const otherId =
-                      connection.source === thought.id
-                        ? connection.target
-                        : connection.source;
+                    const key = getConnectionKey(connection);
 
-                    const other = availableThoughts.find(
-                      (item) => item.id === otherId
+                    const source = availableThoughts.find(
+                      (item) => item.id === connection.source
                     );
 
-                    if (!other) return null;
+                    const target = availableThoughts.find(
+                      (item) => item.id === connection.target
+                    );
+
+                    if (!source || !target) return null;
+
+                    const type =
+                      connection.relationshipType ?? "related_to";
 
                     return (
-                      <div className="connection-item" key={otherId}>
-                        <span>{other.title}</span>
-                        <button
-                          type="button"
-                          disabled={disconnectingId !== null || isConnecting}
-                          onClick={() => void handleDisconnect(otherId)}
-                        >
-                          {disconnectingId === otherId
-                            ? "Removing..."
-                            : "Disconnect"}
-                        </button>
+                      <div
+                        className="relationship-card"
+                        key={key}
+                      >
+                        <div className="relationship-statement">
+                          <strong>{source.title}</strong>
+                          <span>{RELATIONSHIP_LABELS[type]}</span>
+                          <strong>{target.title}</strong>
+                        </div>
+
+                        {editingConnectionKey === key ? (
+                          <>
+                            <textarea
+                              aria-label="Edit relationship explanation"
+                              value={editingDescription}
+                              onChange={(event) =>
+                                setEditingDescription(
+                                  event.target.value
+                                )
+                              }
+                              rows={3}
+                              disabled={relationshipBusy}
+                            />
+
+                            <div className="relationship-actions">
+                              <button
+                                type="button"
+                                disabled={relationshipBusy}
+                                onClick={() =>
+                                  setEditingConnectionKey(null)
+                                }
+                              >
+                                Cancel
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={relationshipBusy}
+                                onClick={() =>
+                                  void handleUpdateConnection(connection)
+                                }
+                              >
+                                Save explanation
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <p>
+                              {connection.description ||
+                                "No explanation yet."}
+                            </p>
+
+                            <div className="relationship-actions">
+                              <button
+                                type="button"
+                                disabled={relationshipBusy}
+                                onClick={() => {
+                                  setEditingConnectionKey(key);
+                                  setEditingDescription(
+                                    connection.description ?? ""
+                                  );
+                                }}
+                              >
+                                Edit explanation
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={relationshipBusy}
+                                onClick={() =>
+                                  void handleDisconnect(connection)
+                                }
+                              >
+                                {disconnectingId === key
+                                  ? "Removing..."
+                                  : "Disconnect"}
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     );
                   })}

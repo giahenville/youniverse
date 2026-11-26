@@ -69,6 +69,81 @@ pub fn run() {
                 SET updated_at = created_at;
             ",
             kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 5,
+            description: "add_semantic_relationships",
+            sql: "
+                CREATE TABLE connections_new (
+                    source TEXT NOT NULL,
+                    target TEXT NOT NULL,
+                    relationship_type TEXT NOT NULL
+                        DEFAULT 'related_to',
+                    description TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL
+                        DEFAULT CURRENT_TIMESTAMP,
+
+                    PRIMARY KEY (
+                        source,
+                        target,
+                        relationship_type
+                    ),
+
+                    CHECK (source <> target),
+
+                    CHECK (
+                        relationship_type IN (
+                            'related_to',
+                            'prerequisite_for',
+                            'part_of',
+                            'applied_in',
+                            'explains',
+                            'contrasts_with',
+                            'inspired'
+                        )
+                    ),
+
+                    CHECK (
+                        relationship_type NOT IN (
+                            'related_to',
+                            'contrasts_with'
+                        )
+                        OR source < target
+                    ),
+
+                    FOREIGN KEY (source)
+                        REFERENCES thoughts(id)
+                        ON DELETE CASCADE,
+
+                    FOREIGN KEY (target)
+                        REFERENCES thoughts(id)
+                        ON DELETE CASCADE
+                );
+
+                INSERT INTO connections_new (
+                    source,
+                    target,
+                    relationship_type,
+                    description,
+                    created_at
+                )
+                SELECT
+                    source,
+                    target,
+                    'related_to',
+                    '',
+                    created_at
+                FROM connections;
+
+                DROP TABLE connections;
+
+                ALTER TABLE connections_new
+                RENAME TO connections;
+
+                CREATE INDEX idx_connections_target
+                ON connections(target);
+            ",
+            kind: MigrationKind::Up,
         }
     ];
 

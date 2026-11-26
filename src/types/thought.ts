@@ -1,3 +1,5 @@
+import type { RelationshipType } from "./relationship";
+
 export type Thought = {
   id: string;
   title: string;
@@ -13,4 +15,7 @@ export type Thought = {
 export type ThoughtConnection = {
   source: string;
   target: string;
+  relationshipType?: RelationshipType;
+  description?: string;
+  createdAt?: string;
 };

@@ -390,3 +390,128 @@ body,
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Semantic relationships */
+
+.thought-connect {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.relationship-preview,
+.relationship-card {
+  background: rgba(167, 139, 250, 0.06);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  border-radius: 10px;
+  padding: 12px;
+  overflow-wrap: anywhere;
+}
+
+.relationship-preview,
+.relationship-statement {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.relationship-preview span,
+.relationship-statement span {
+  color: #c4b5fd;
+  font-size: 0.85rem;
+}
+
+.relationship-card {
+  margin-bottom: 12px;
+}
+
+.relationship-card p {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.relationship-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.relationship-card textarea,
+.thought-connect textarea {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+
+/* Scrollable thought panel */
+
+.thought-panel {
+  box-sizing: border-box;
+  max-height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #51436d transparent;
+}
+
+
+/* Consistent relationship controls */
+
+.thought-panel {
+  color-scheme: dark;
+}
+
+.thought-panel textarea,
+.thought-panel select,
+.thought-panel input {
+  box-sizing: border-box;
+  width: 100%;
+  background: #171626;
+  color: #e9e5f2;
+  border: 1px solid #51436d;
+  border-radius: 8px;
+  padding: 10px;
+  font: inherit;
+}
+
+.thought-panel textarea {
+  resize: vertical;
+}
+
+.relationship-actions button {
+  background: #29213d;
+  color: #ddd6fe;
+  border: 1px solid #51436d;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.relationship-actions button:hover:not(:disabled) {
+  background: #3c3055;
+}
+
+.thought-panel button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.thought-panel :focus-visible {
+  outline: 2px solid #c4b5fd;
+  outline-offset: 3px;
+}
+
+
+.thought-validation-error {
+  color: #fca5a5;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 8px 0;
+}
+
