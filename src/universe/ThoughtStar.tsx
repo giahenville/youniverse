@@ -2,6 +2,7 @@ import { Text } from "@react-three/drei";
 import type { Thought } from "../types/thought";
 
 type ThoughtStarProps = {
+  radius: number;
   thought: Thought;
   selected: boolean;
   hovered: boolean;
@@ -11,6 +12,7 @@ type ThoughtStarProps = {
 };
 
 export function ThoughtStar({
+  radius,
   thought,
   selected,
   hovered,
@@ -35,7 +37,7 @@ export function ThoughtStar({
           onHover(null);
         }}
       >
-        <sphereGeometry args={[0.35, 24, 24]} />
+        <sphereGeometry args={[radius, 24, 24]} />
 
         <meshStandardMaterial
           color={dimmed ? "#151520" : thought.color}
@@ -50,7 +52,7 @@ export function ThoughtStar({
       </mesh>
 
       <Text
-        position={[0, -0.65, 0]}
+        position={[0, -(radius + 0.3), 0]}
         fontSize={0.25}
         color="white"
         fillOpacity={dimmed ? 0.08 : 1}

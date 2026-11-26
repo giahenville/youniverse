@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { getDegreeCentrality, getStarRadius } from "../utils/graph";
+import { useState, useMemo } from "react";
 import { OrbitControls, Stars } from "@react-three/drei";
 
 import type {
@@ -25,6 +26,11 @@ export function Universe({
 }: UniverseProps) {
   const [hoveredThoughtId, setHoveredThoughtId] =
     useState<string | null>(null);
+
+  const degrees = useMemo(
+    () => getDegreeCentrality(connections),
+    [connections]
+  );
 
   const thoughtMap = new Map(
     thoughts.map((thought) => [thought.id, thought])
@@ -80,6 +86,7 @@ export function Universe({
 
         return (
           <ThoughtStar
+            radius={getStarRadius(degrees.get(thought.id) ?? 0)}
             key={thought.id}
             thought={thought}
             selected={selected}
